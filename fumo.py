@@ -7,6 +7,55 @@ class Fumo(pygame.sprite.Sprite):
         super().__init__()
         self.image = pygame.image.load('assets/FumoReimu.png')
         self.rect = self.image.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+        self.rotate = 90
+        self.scale = 2
+        self.bounds = [346, 454, 136, 264]
+
+    def do_click(self):
+        global mouse_down
+        global times_clicked
+        global has_clicked_fumo
+
+        mouse = pygame.mouse.get_pressed()
+        if mouse[0] and not mouse_down:
+            mouse_pos = pygame.mouse.get_pos()
+            mouse_down = True
+
+            if self.bounds[0] <= mouse_pos[0] <= self.bounds[1] and self.bounds[2] <= mouse_pos[1] <= self.bounds[3]:
+                has_clicked_fumo = True
+                times_clicked += 1
+                self.image = pygame.transform.flip(self.image, True, False)
+                self.image = pygame.transform.rotate(self.image, self.rotate)
+                self.rotate *= -1
+                if self.scale == 2:
+                    self.image = pygame.transform.scale_by(self.image, self.scale)
+                    self.rect = self.image.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+
+                    self.bounds[1] += 64
+                    self.bounds[3] += 64
+                    self.bounds[0] -= 64
+                    self.bounds[2] -= 64
+
+                    self.scale = 0.5
+
+                else:
+                    self.image = pygame.transform.scale_by(self.image, self.scale)
+                    self.rect = self.image.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+
+                    self.bounds[1] -= 64
+                    self.bounds[3] -= 64
+                    self.bounds[0] += 64
+                    self.bounds[2] += 64
+
+                    self.scale = 2
+
+                sound.play()
+
+        if not mouse[0] and mouse_down:
+            mouse_down = False
+
+    def update(self):
+        self.do_click()
 
 
 sound = pygame.mixer.Sound('assets/sounds/bloop.ogg')
@@ -24,7 +73,6 @@ has_clicked_fumo = False
 fumo_group = pygame.sprite.GroupSingle()
 fumo_group.add(Fumo())
 
-previous_time = time.time()
 times_clicked = 0
 mouse_down = False
 while running:
@@ -32,26 +80,12 @@ while running:
         pygame.quit()
         break
 
-    delta_Time = time.time() - previous_time
-    previous_time = time.time()
-
     events = pygame.event.get()
 
     for event in events:
         if event.type == pygame.QUIT:
             running = False
 
-    mouse = pygame.mouse.get_pressed()
-    if mouse[0] and not mouse_down:
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_down = True
-        if 346 <= mouse_pos[0] <= 454 and 136 <= mouse_pos[1] <= 264:
-            has_clicked_fumo = True
-            times_clicked += 1
-            sound.play()
-
-    if not mouse[0] and mouse_down:
-        mouse_down = False
     screen.blit(bg_surface, (0, 0))
     if has_clicked_fumo:
         yay_surface = pixel_font.render(f"You have clicked the fumo {times_clicked} {'times' if times_clicked > 1 else 'time' } :)", False, (64, 64, 64))
@@ -59,4 +93,5 @@ while running:
         screen.blit(yay_surface, yay_rectangle)
 
     fumo_group.draw(screen)
+    fumo_group.update()
     pygame.display.update()
